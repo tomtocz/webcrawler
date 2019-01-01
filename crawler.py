@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from urllib.parse import urlparse
 from urllib.request import urlopen
+from urllib.error import HTTPError
 import argparse
 
 
@@ -25,9 +26,15 @@ def crawl(start_url):
 
 
 def fetch_page_content(url):
-    print("page:", url)
+    print("page: {}".format(url))
 
-    html_page = urlopen(url)
+    domain = urlparse(url).netloc
+    try:
+        html_page = urlopen(url)
+    except HTTPError as error:
+        print("    !!! Page skipped because of: {}".format(error))
+        return []
+
     soup = BeautifulSoup(html_page, features='html.parser')
 
     all_links = set([normalize_url(url, link) for link in extract_attribute(soup.findAll('a'), 'href') if link])
