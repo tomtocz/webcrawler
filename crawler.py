@@ -2,18 +2,16 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from urllib.parse import urlparse
 from urllib.request import urlopen
+import argparse
 
-
-main_url = 'http://kajak.org.pl'
-domain = urlparse(main_url).netloc
 
 url_queue = list()
 urls_enqueued = set()
 
 
-def main():
-    urls_enqueued.add(main_url)
-    url_queue.append(main_url)
+def crawl(start_url):
+    urls_enqueued.add(start_url)
+    url_queue.append(start_url)
 
     while len(url_queue) > 0:
         url = url_queue.pop(0)
@@ -33,8 +31,8 @@ def fetch_page_content(url):
     soup = BeautifulSoup(html_page, features='html.parser')
 
     all_links = set([normalize_url(url, link) for link in extract_attribute(soup.findAll('a'), 'href') if link])
-    internal_links = [link for link in all_links if is_internal(link)]
-    external_links = [link for link in all_links if not is_internal(link)]
+    internal_links = [link for link in all_links if is_internal(domain, link)]
+    external_links = [link for link in all_links if not is_internal(domain, link)]
     images = extract_attribute(soup.findAll('img'), 'src')
 
     print_section("internal links", internal_links)
@@ -54,7 +52,7 @@ def extract_attribute(elements, attribute_name):
     return [e.get(attribute_name) for e in elements]
 
 
-def is_internal(url):
+def is_internal(domain, url):
     parsed = urlparse(url)
     return not parsed.netloc or parsed.netloc == domain
 
@@ -65,4 +63,7 @@ def normalize_url(base, url):
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("url", help="Starting URL")
+    args = parser.parse_args()
+    crawl(args.url)
